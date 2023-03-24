@@ -41,7 +41,6 @@ public class GameManager : MonoBehaviour
     }
 
     // Declare any other necessary functions here
-
     public float Gaussian(float x, float a, float b, float c)
     {
         float exponent = -Mathf.Pow(x - b, 2.0f) / (2.0f * Mathf.Pow(c, 2.0f));

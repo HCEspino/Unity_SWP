@@ -7,8 +7,6 @@ public class Agent : MonoBehaviour
 
     // Singleton
     private static Agent instance;
-    public GameObject textCounter;
-
     private void Awake()
     {
         if (instance == null)
@@ -26,11 +24,13 @@ public class Agent : MonoBehaviour
     {
         get { return instance; }
     }
+    // Singleton END
 
-
+    public bool freeExplore = true;
+    public bool followMouse = false;
     public float speed = 10.0f;       // the speed at which to move the object
-
     private Vector3 targetPosition;  // the position to move to
+    
 
     private void Start()
     {
@@ -39,6 +39,29 @@ public class Agent : MonoBehaviour
     }
 
     private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            followMouse = false;
+            targetPosition = GetRandomTargetPosition();
+        }
+        if(followMouse)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit))
+            {
+                Vector3 targetPosition = new Vector3(hit.point.x, transform.position.y, hit.point.z);
+                transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f);
+            }    
+        }
+        else if(freeExplore)
+        {
+            moveToTarget();
+        }
+    }
+
+    private void moveToTarget()
     {
         // Calculate the direction and distance to the target position
         Vector3 direction = targetPosition - transform.position;
@@ -87,5 +110,15 @@ public class Agent : MonoBehaviour
     {
         speed = speed-10f;
         speed = Mathf.Clamp(speed, 0f, 100f);
+    }
+
+    public void ToggleExplore()
+    {
+        freeExplore = !freeExplore;
+    }
+
+    public void FollowMouseOn()
+    {
+        followMouse = true;
     }
 }

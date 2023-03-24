@@ -10,9 +10,32 @@ public class PlaceCell : MonoBehaviour
     private float activation;
     public PlaceNetwork network;
 
-    // Start is called before the first frame update
-    void Start()
+    // Spikewave stuff
+    public int v = 0;
+    public int u = 0;
+    public int I = 0;
+    public Hashtable connections;
+    public Hashtable wgts;
+    public Hashtable delaybuffs;
+
+    public void reset()
     {
+        v = 0;
+        u = 0;
+        I = 0;
+        foreach (object key in delaybuffs.Keys)
+        {
+            delaybuffs[key] = 0;
+        }
+    }
+
+    // Start is called before the first frame update
+    void Awake()
+    {
+        connections = new Hashtable();
+        wgts = new Hashtable();
+        delaybuffs = new Hashtable();
+        reset();
         _renderer = GetComponent<Renderer>(); // Get the renderer component of the object
     }
 
@@ -33,7 +56,7 @@ public class PlaceCell : MonoBehaviour
         MoveFromLists(activation);
     }
 
-    private float Activation(float x)
+    public float Activation(float x)
     {
         float gauss = GameManager.Instance.Gaussian(x, 1.0f, 0.0f, 2.0f);
         return gauss;
