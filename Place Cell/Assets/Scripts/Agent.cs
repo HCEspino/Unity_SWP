@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class Agent : MonoBehaviour
 {
@@ -28,19 +29,27 @@ public class Agent : MonoBehaviour
 
     public bool freeExplore = true;
     public bool followMouse = false;
+    public int numDirections = 16;
     public float speed = 10.0f;       // the speed at which to move the object
-    private Vector3 targetPosition;  // the position to move to
+    public Vector3 targetPosition;  // the position to move to
     
+    public bool pathWalk = false;
+    public int pathNum;
+    public Vector3 pathPoint; 
+
+    public GameObject exploreObject;
+    private ExploreCounter exploreCounter;
 
     private void Start()
     {
         // Choose a random target position within the specified range
+        exploreCounter = exploreObject.GetComponent<ExploreCounter>();
         targetPosition = GetRandomTargetPosition();
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && followMouse)
         {
             followMouse = false;
             targetPosition = GetRandomTargetPosition();
@@ -58,6 +67,30 @@ public class Agent : MonoBehaviour
         else if(freeExplore)
         {
             moveToTarget();
+        }
+        else if(pathWalk)
+        {
+            moveAlongPath();
+        }
+    }
+
+    private void moveAlongPath()
+    {
+        // Calculate the direction and distance to the target position
+        Vector3 direction = targetPosition - transform.position;
+        direction.y = 0.0f;
+        float distanceToTarget = direction.magnitude;
+
+        // Move towards the target position
+        if (distanceToTarget > 0.1f)
+        {
+            direction.Normalize();
+            transform.Translate(direction * Mathf.Min(distanceToTarget, speed * Time.deltaTime), Space.World);
+        }
+        else
+        {
+            // Choose a new random target position within the specified range
+            pathNum++;
         }
     }
 
@@ -83,21 +116,30 @@ public class Agent : MonoBehaviour
 
     private Vector3 GetRandomTargetPosition()
     {
-        float randomPosition = GameManager.Instance.Levy(1.0f, 1.9f);
-        Vector3 randomDirection = Random.insideUnitSphere;
-        randomDirection.y = 0.0f;
-        Vector3 newPosition = transform.position + randomDirection.normalized * randomPosition;
-
-        while(GameManager.Instance.IsTrajectoryBlocked(transform.position, newPosition))
+        for(int j = 0; j < 1000; j++)
         {
-            randomPosition = GameManager.Instance.Levy(1.0f, 1.9f);
-            randomDirection = Random.insideUnitSphere;
-            randomDirection.y = 0.0f;
-            newPosition = transform.position + randomDirection.normalized * randomPosition;
-        }
-        
+            float randomPosition = GameManager.Instance.Levy(1.0f, 1.9f);
+            List<Vector3> possiblePositions = new List<Vector3>();
 
-        return newPosition;
+            // Populate the list of possible movement directions
+            for (int i = 0; i < numDirections; i++)
+            {
+                float angle = i * Mathf.PI * 2 / numDirections;
+                Vector3 direction = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+                Vector3 newPosition = transform.position + direction.normalized * randomPosition;
+                if (!GameManager.Instance.IsTrajectoryBlocked(transform.position, newPosition))
+                {
+                    possiblePositions.Add(newPosition);
+                }
+            }
+            if(possiblePositions.Count != 0)
+            {
+                exploreCounter.ChangeStepCount();
+                return possiblePositions[Random.Range(0, possiblePositions.Count)];
+            }
+        }
+        Debug.Log("Stuck! This probably should't happen");
+        return Vector3.zero;
     }
 
     public void IncrementSpeed()

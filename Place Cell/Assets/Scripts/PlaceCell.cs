@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class PlaceCell : MonoBehaviour
 {
@@ -18,12 +19,17 @@ public class PlaceCell : MonoBehaviour
     public Hashtable wgts;
     public Hashtable delaybuffs;
 
+    private float spikeColor = 0.0f;
+
     public void reset()
     {
         v = 0;
         u = 0;
         I = 0;
-        foreach (object key in delaybuffs.Keys)
+
+        int[] keyList = new int[delaybuffs.Count];
+        delaybuffs.Keys.CopyTo(keyList, 0);
+        foreach (int key in keyList)
         {
             delaybuffs[key] = 0;
         }
@@ -52,7 +58,19 @@ public class PlaceCell : MonoBehaviour
             activation = Activation(distance);
         }
 
-        ChangeColor(activation);
+        if(network.spiking)
+        {
+            SpikeColor(Mathf.Min(1.0f, (float)v));
+        }
+        else
+        {
+            if(spikeColor != 0f)
+            {
+                spikeColor = 0f;
+            }
+            ChangeColor(activation);
+        }
+
         MoveFromLists(activation);
     }
 
@@ -60,6 +78,22 @@ public class PlaceCell : MonoBehaviour
     {
         float gauss = GameManager.Instance.Gaussian(x, 1.0f, 0.0f, 2.0f);
         return gauss;
+    }
+
+    private void SpikeColor(float x)
+    {
+        Color color = Color.red;
+        if(x == 1.0f)
+        {
+            color = Color.Lerp(Color.red, Color.white, x);
+            spikeColor = 1.0f;
+        }
+        else if (spikeColor != 0.0f)
+        {
+            spikeColor = Mathf.Max(0.0f, spikeColor - (1f * Time.deltaTime));
+            color = Color.Lerp(Color.red, Color.white, spikeColor);
+        }
+        _renderer.material.color = color;
     }
 
     private void ChangeColor(float x)
